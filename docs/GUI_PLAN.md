@@ -1,0 +1,112 @@
+# DupeLens GUI Plan
+
+## Goal
+
+Build a visual interface for duplicate cleanup, focused on compare-mode safety:
+
+> Keep my primary folder untouched. Find duplicate copies in backup/import folders and let me review before moving them to Trash.
+
+## Non-goals
+
+- Do not build a general Mac cleaner.
+- Do not scan the whole disk by default.
+- Do not clean caches, app leftovers, logs, Time Machine snapshots, or system folders.
+- Do not add fuzzy image/audio/video matching before exact duplicate cleanup is polished.
+
+## Recommended implementation path
+
+### Phase 1 — stabilize Rust core for UI
+
+Add a stable UI-facing JSON schema:
+
+```json
+{
+  "schema": "dupelens-scan-v1",
+  "mode": "compare",
+  "primary_root": "/Users/me/Downloads",
+  "roots": ["/Users/me/Downloads", "/Volumes/Backup/Old Downloads"],
+  "summary": {
+    "groups": 12,
+    "files": 39,
+    "reclaimable_bytes": 123456789
+  },
+  "groups": [
+    {
+      "id": "...",
+      "size": 123,
+      "reclaimable_bytes": 246,
+      "keep": "...",
+      "trash_candidates": ["..."],
+      "files": []
+    }
+  ]
+}
+```
+
+Add JSON progress events:
+
+```json
+{"event":"phase","name":"scanning"}
+{"event":"progress","phase":"hashing","done":120,"total":500}
+{"event":"done","summary":{"groups":12,"reclaimable_bytes":123456789}}
+```
+
+Add stable IDs:
+
+- `group_id = hash + size`
+- `file_id = hash(path + size + mtime)`
+
+### Phase 2 — local web UI prototype
+
+Create a small app under `app/`:
+
+```text
+app/
+  server.py or tiny node server
+  index.html
+  styles.css
+  app.js
+```
+
+UI flow:
+
+1. Choose mode: `Scan folder` or `Compare primary vs backup`.
+2. Enter/select paths.
+3. Start scan.
+4. Show progress.
+5. Show summary: groups, files, reclaimable space.
+6. Show groups with `KEEP` and `TRASH` labels.
+7. Save cleanup plan.
+8. Apply selected cleanup only after confirmation.
+
+### Phase 3 — desktop app
+
+Options:
+
+- Tauri: Rust backend + web UI, fastest cross-platform desktop path.
+- SwiftUI: best native Mac app path, but requires macOS/Xcode for full build/test/signing.
+
+Recommended: prototype UI locally first, then decide between Tauri and SwiftUI once the product flow is proven.
+
+## Safety requirements for GUI
+
+- Folder selection must be explicit.
+- Primary root must be visually marked as protected.
+- Every destructive action requires review.
+- Move to Trash only; no permanent delete in v1.
+- Never delete the last copy in a group.
+- Show why each file is recommended for KEEP/TRASH.
+- Plans must be editable before apply.
+- Apply only selected groups/files.
+- After apply, show moved/skipped/error counts.
+
+## First visual MVP acceptance criteria
+
+- User can compare two folders.
+- UI shows progress while scanning.
+- UI shows duplicate groups sorted by reclaimable bytes.
+- UI marks one `KEEP` file under primary root.
+- UI marks only secondary-root copies as `TRASH` candidates.
+- User can save a cleanup plan JSON.
+- User can apply a selected plan with `MOVE TO TRASH` confirmation.
+- Synthetic compare fixture passes end-to-end.

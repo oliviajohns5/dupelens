@@ -1,0 +1,22 @@
+# OS/editor
+.DS_Store
+.idea/
+.vscode/
+
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+
+# Rust
+/target/
+core/target/
+
+# DupeLens outputs
+cleanup-plan.json
+duplicates.txt
+duplicates.json
+*.tar.gz
+
+# Test scratch
+.tmp/
