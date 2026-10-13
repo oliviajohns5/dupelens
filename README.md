@@ -114,6 +114,20 @@ python3 dupelens.py --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --q
 
 DupeLens should move toward a visual interface around the Rust core, not a broad cleaner.
 
+Run the current local web prototype:
+
+```bash
+cd dupelens
+cd core && cargo build --release && cd ..
+python3 app/server.py
+```
+
+Open:
+
+```text
+http://127.0.0.1:8787
+```
+
 Planned first GUI flow:
 
 1. Choose `Primary folder`.

@@ -1,0 +1,48 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DupeLens Local UI</title>
+  <link rel="stylesheet" href="/styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="hero">
+      <p class="eyebrow">DupeLens local prototype</p>
+      <h1>Compare a primary folder against a backup/import folder.</h1>
+      <p class="sub">The primary folder is protected. DupeLens only recommends duplicate copies from the backup/import side.</p>
+    </header>
+
+    <section class="card">
+      <div class="grid">
+        <label>Primary folder <span>KEEP side</span>
+          <input id="primary" placeholder="/Users/you/Downloads" />
+        </label>
+        <label>Backup/import folder <span>TRASH candidate side</span>
+          <input id="backup" placeholder="/Volumes/Backup/Old Downloads" />
+        </label>
+      </div>
+      <div class="controls">
+        <label class="inline"><input id="recursive" type="checkbox" checked /> Recurse into subfolders</label>
+        <label class="inline"><input id="includeHidden" type="checkbox" /> Include hidden files</label>
+        <label>Mode
+          <select id="scanMode">
+            <option value="quick">Quick ≥10MB</option>
+            <option value="balanced" selected>Balanced ≥1MB</option>
+            <option value="deep">Deep ≥1 byte</option>
+          </select>
+        </label>
+        <button id="scanBtn">Start scan</button>
+      </div>
+      <p class="hint">Tip: build the core first with <code>cd core && cargo build --release</code>.</p>
+    </section>
+
+    <section id="status" class="card muted">Idle.</section>
+
+    <section id="summary" class="summary hidden"></section>
+    <section id="groups" class="groups"></section>
+  </main>
+  <script src="/app.js"></script>
+</body>
+</html>

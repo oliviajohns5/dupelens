@@ -80,4 +80,11 @@ print('rust_compare_plan_ok')
 print('rust_ui_json_events_ok')
 PY
 
+printf '== Local web UI syntax ==\n'
+cd "$ROOT"
+python3 -m py_compile app/server.py
+test -f app/index.html
+test -f app/app.js
+test -f app/styles.css
+
 printf '== Done ==\n'

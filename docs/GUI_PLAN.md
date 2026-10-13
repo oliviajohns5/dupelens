@@ -73,11 +73,23 @@ Stable IDs are included:
 
 ### Phase 2 — local web UI prototype
 
-Create a small app under `app/`:
+Implemented under `app/` as a local-only Python stdlib server.
+
+Run:
+
+```bash
+cd dupelens
+cd core && cargo build --release && cd ..
+python3 app/server.py
+```
+
+Open `http://127.0.0.1:8787`.
+
+Files:
 
 ```text
 app/
-  server.py or tiny node server
+  server.py
   index.html
   styles.css
   app.js
