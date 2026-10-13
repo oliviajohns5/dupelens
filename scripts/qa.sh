@@ -47,6 +47,8 @@ python3 - <<PY
 from pathlib import Path
 b=Path('$SCRATCH')
 (b/'primary'/'keep.bin').write_bytes(b'R'*4096)
+(b/'primary'/'single-dup-1.bin').write_bytes(b'T'*4096)
+(b/'primary'/'single-dup-2.bin').write_bytes(b'T'*4096)
 (b/'backup'/'copy1.bin').write_bytes(b'R'*4096)
 (b/'backup'/'copy2.bin').write_bytes(b'R'*4096)
 (b/'backup'/'backup-only-1.bin').write_bytes(b'S'*4096)
@@ -56,6 +58,7 @@ cd "$ROOT/core"
 cargo test
 cargo build --release
 ./target/release/dupelens-core --compare -r --mode deep --quiet --plan "$SCRATCH/rust-plan.json" "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-plan.out"
+./target/release/dupelens-core -r --mode deep --quiet --ui-json "$SCRATCH/primary" > "$SCRATCH/rust-single-ui.json"
 ./target/release/dupelens-core --compare -r --mode deep --quiet --ui-json "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-ui.json"
 ./target/release/dupelens-core --compare -r --mode deep --json-events --ui-json "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-events-ui.json" 2> "$SCRATCH/rust-events.ndjson"
 python3 - <<PY
@@ -76,8 +79,13 @@ assert all('/backup/' in x for x in ui['groups'][0]['trash_candidates']), ui
 events=[json.loads(line) for line in (b/'rust-events.ndjson').read_text().splitlines() if line.strip()]
 assert any(e.get('event')=='progress' for e in events), events
 assert events[-1].get('event')=='done', events[-1]
+single=json.loads((b/'rust-single-ui.json').read_text())
+assert single['schema']=='dupelens-scan-v1', single
+assert single['mode']=='scan', single
+assert single['summary']['groups']==1, single
 print('rust_compare_plan_ok')
 print('rust_ui_json_events_ok')
+print('rust_single_folder_ui_ok')
 PY
 
 printf '== Local web UI syntax ==\n'

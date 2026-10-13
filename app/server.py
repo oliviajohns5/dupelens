@@ -45,8 +45,13 @@ def safe_path(value: str) -> str:
 def start_scan(payload: dict) -> str:
     if not CORE.exists():
         raise FileNotFoundError(f"Rust core binary not found: {CORE}. Run: cd core && cargo build --release")
+    mode = payload.get("mode", "single")
+    if mode not in {"single", "compare"}:
+        raise ValueError("mode must be single or compare")
     primary = safe_path(payload.get("primary", ""))
-    backup = safe_path(payload.get("backup", ""))
+    backup = safe_path(payload.get("backup", "")) if mode == "compare" else ""
+    if mode == "compare" and Path(primary).resolve(strict=False) == Path(backup).resolve(strict=False):
+        raise ValueError("Primary and backup folders are the same. Use Scan one folder instead, or choose a different backup/import folder.")
     scan_mode = payload.get("scan_mode", "balanced")
     if scan_mode not in {"quick", "balanced", "deep"}:
         raise ValueError("scan_mode must be quick, balanced, or deep")
@@ -63,12 +68,16 @@ def start_scan(payload: dict) -> str:
         "error": None,
         "command": [],
     }
-    args = [str(CORE), "--compare", "--mode", scan_mode, "--ui-json", "--json-events"]
+    args = [str(CORE), "--mode", scan_mode, "--ui-json", "--json-events"]
+    if mode == "compare":
+        args.append("--compare")
     if recursive:
         args.append("-r")
     if include_hidden:
         args.append("--include-hidden")
-    args.extend([primary, backup])
+    args.append(primary)
+    if mode == "compare":
+        args.append(backup)
     job["command"] = args
     with jobs_lock:
         jobs[job_id] = job

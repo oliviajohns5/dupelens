@@ -3,6 +3,12 @@ const statusBox = $('status');
 const summaryBox = $('summary');
 const groupsBox = $('groups');
 const scanBtn = $('scanBtn');
+const singleMode = $('singleMode');
+const compareMode = $('compareMode');
+const singleFields = $('singleFields');
+const compareFields = $('compareFields');
+const warning = $('warning');
+let activeMode = 'single';
 
 function bytes(n) {
   const units = ['B', 'KB', 'MB', 'GB', 'TB'];
@@ -13,12 +19,40 @@ function bytes(n) {
   }
 }
 
+function normalizePath(value) {
+  return String(value || '').trim().replace(/\/$/, '');
+}
+
+function setMode(mode) {
+  activeMode = mode;
+  singleMode.classList.toggle('active', mode === 'single');
+  compareMode.classList.toggle('active', mode === 'compare');
+  singleFields.classList.toggle('hidden', mode !== 'single');
+  compareFields.classList.toggle('hidden', mode !== 'compare');
+  statusBox.textContent = mode === 'single'
+    ? 'Single-folder scan: DupeLens finds duplicate groups inside this folder.'
+    : 'Compare mode: primary is protected; backup/import side is where duplicate copies are candidates.';
+  validateInputs();
+}
+
 function setStatus(text, detail = '') {
-  statusBox.innerHTML = `<strong>${text}</strong>${detail ? `<pre>${detail}</pre>` : ''}`;
+  statusBox.innerHTML = `<strong>${escapeHtml(text)}</strong>${detail ? `<pre>${escapeHtml(detail)}</pre>` : ''}`;
 }
 
 function metric(label, value) {
   return `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
+}
+
+function emptyMessage(result) {
+  if (result.mode === 'compare') {
+    return 'No duplicates were found across those two folders. If you used the same path twice, switch to “Scan one folder”.';
+  }
+  return 'No duplicate groups found in this folder with the current depth setting.';
+}
+
+function roleText(file, result) {
+  if (file.role === 'keep') return result.mode === 'compare' ? 'KEEP — primary/protected copy' : 'KEEP — one copy retained';
+  return result.mode === 'compare' ? 'TRASH CANDIDATE — backup/import copy' : 'TRASH CANDIDATE — extra copy';
 }
 
 function renderResult(result) {
@@ -33,7 +67,7 @@ function renderResult(result) {
 
   const groups = result.groups || [];
   if (!groups.length) {
-    groupsBox.innerHTML = '<section class="card muted">No cross-root duplicates found. Primary folder remains untouched.</section>';
+    groupsBox.innerHTML = `<section class="card muted">${escapeHtml(emptyMessage(result))}</section>`;
     return;
   }
   groupsBox.innerHTML = groups.map((group, index) => `
@@ -43,13 +77,13 @@ function renderResult(result) {
           <strong>Group ${index + 1}</strong>
           <div class="meta">${group.files.length} files · ${bytes(group.size)} each · ${bytes(group.reclaimable_bytes)} reclaimable</div>
         </div>
-        <span class="badge">${group.id}</span>
+        <span class="badge">${escapeHtml(group.id)}</span>
       </div>
       ${group.files.map((file) => `
         <div class="file">
-          <div class="role ${file.role}">${file.role === 'keep' ? 'KEEP — protected primary' : 'TRASH CANDIDATE — backup/import copy'}</div>
+          <div class="role ${file.role}">${escapeHtml(roleText(file, result))}</div>
           <div class="path">${escapeHtml(file.path)}</div>
-          <div class="meta">${bytes(file.size)} · id ${file.id}</div>
+          <div class="meta">${bytes(file.size)} · id ${escapeHtml(file.id)}</div>
         </div>
       `).join('')}
     </article>
@@ -58,6 +92,23 @@ function renderResult(result) {
 
 function escapeHtml(value) {
   return String(value).replace(/[&<>"']/g, (ch) => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#039;'}[ch]));
+}
+
+function validateInputs() {
+  warning.classList.add('hidden');
+  warning.textContent = '';
+  scanBtn.disabled = false;
+  if (activeMode === 'compare') {
+    const primary = normalizePath($('primary').value);
+    const backup = normalizePath($('backup').value);
+    if (primary && backup && primary === backup) {
+      warning.textContent = 'You selected the same folder twice. Use “Scan one folder” for this, or choose a different backup/import folder.';
+      warning.classList.remove('hidden');
+      scanBtn.disabled = true;
+      return false;
+    }
+  }
+  return true;
 }
 
 async function poll(jobId) {
@@ -76,11 +127,16 @@ async function poll(jobId) {
     if (job.status === 'failed') {
       setStatus('Scan failed', job.error || 'Unknown error');
       scanBtn.disabled = false;
+      validateInputs();
       return;
     }
-    setStatus('Scan complete', `Primary root protected. Showing KEEP/TRASH recommendations.`);
+    const modeText = job.result.mode === 'compare'
+      ? 'Compare scan complete. Primary folder stayed protected.'
+      : 'Folder scan complete. Showing duplicate groups inside this folder.';
+    setStatus(modeText);
     renderResult(job.result);
     scanBtn.disabled = false;
+    validateInputs();
     return;
   }
 }
@@ -88,11 +144,13 @@ async function poll(jobId) {
 scanBtn.addEventListener('click', async () => {
   summaryBox.classList.add('hidden');
   groupsBox.innerHTML = '';
+  if (!validateInputs()) return;
   scanBtn.disabled = true;
   setStatus('Starting scan...');
   try {
     const payload = {
-      primary: $('primary').value,
+      mode: activeMode,
+      primary: activeMode === 'single' ? $('singlePath').value : $('primary').value,
       backup: $('backup').value,
       scan_mode: $('scanMode').value,
       recursive: $('recursive').checked,
@@ -109,8 +167,13 @@ scanBtn.addEventListener('click', async () => {
   } catch (err) {
     setStatus('Error', err.message || String(err));
     scanBtn.disabled = false;
+    validateInputs();
   }
 });
+
+singleMode.addEventListener('click', () => setMode('single'));
+compareMode.addEventListener('click', () => setMode('compare'));
+['singlePath', 'primary', 'backup'].forEach((id) => $(id).addEventListener('input', validateInputs));
 
 fetch('/api/health')
   .then((r) => r.json())
@@ -118,3 +181,5 @@ fetch('/api/health')
     if (!h.core_exists) setStatus('Core binary missing', `Run: cd core && cargo build --release\nExpected: ${h.core}`);
   })
   .catch(() => {});
+
+setMode('single');
