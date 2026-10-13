@@ -56,6 +56,8 @@ cd "$ROOT/core"
 cargo test
 cargo build --release
 ./target/release/dupelens-core --compare -r --mode deep --quiet --plan "$SCRATCH/rust-plan.json" "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-plan.out"
+./target/release/dupelens-core --compare -r --mode deep --quiet --ui-json "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-ui.json"
+./target/release/dupelens-core --compare -r --mode deep --json-events --ui-json "$SCRATCH/primary" "$SCRATCH/backup" > "$SCRATCH/rust-events-ui.json" 2> "$SCRATCH/rust-events.ndjson"
 python3 - <<PY
 import json
 from pathlib import Path
@@ -65,7 +67,17 @@ assert p['total_reclaimable_bytes']==8192, p
 assert len(p['groups'])==1, p
 assert p['groups'][0]['keep'].endswith('/primary/keep.bin'), p
 assert all('/backup/' in x for x in p['groups'][0]['move_to_trash']), p
+ui=json.loads((b/'rust-ui.json').read_text())
+assert ui['schema']=='dupelens-scan-v1', ui
+assert ui['mode']=='compare', ui
+assert ui['summary']['reclaimable_bytes']==8192, ui
+assert ui['groups'][0]['keep'].endswith('/primary/keep.bin'), ui
+assert all('/backup/' in x for x in ui['groups'][0]['trash_candidates']), ui
+events=[json.loads(line) for line in (b/'rust-events.ndjson').read_text().splitlines() if line.strip()]
+assert any(e.get('event')=='progress' for e in events), events
+assert events[-1].get('event')=='done', events[-1]
 print('rust_compare_plan_ok')
+print('rust_ui_json_events_ok')
 PY
 
 printf '== Done ==\n'

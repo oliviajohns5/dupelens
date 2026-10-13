@@ -66,6 +66,18 @@ Create a safe cleanup plan:
 ./target/release/dupelens-core --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --quiet --plan cleanup-plan.json
 ```
 
+Emit GUI-ready scan JSON:
+
+```bash
+./target/release/dupelens-core --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --quiet --ui-json > scan.json
+```
+
+Emit progress events for a visual interface:
+
+```bash
+./target/release/dupelens-core --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --ui-json --json-events > scan.json 2> events.ndjson
+```
+
 Apply a reviewed plan:
 
 ```bash

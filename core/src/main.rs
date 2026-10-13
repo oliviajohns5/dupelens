@@ -42,6 +42,8 @@ struct Config {
     scan_mode: String,
     no_byte_verify: bool,
     json: bool,
+    ui_json: bool,
+    json_events: bool,
     output: Option<PathBuf>,
     cleanup_plan: Option<PathBuf>,
     apply_plan: Option<PathBuf>,
@@ -57,17 +59,18 @@ struct Config {
 
 struct Progress {
     quiet: bool,
+    json_events: bool,
     started: Instant,
     last: Mutex<Instant>,
 }
 
 impl Progress {
-    fn new(quiet: bool) -> Self {
-        Self { quiet, started: Instant::now(), last: Mutex::new(Instant::now() - Duration::from_secs(10)) }
+    fn new(quiet: bool, json_events: bool) -> Self {
+        Self { quiet, json_events, started: Instant::now(), last: Mutex::new(Instant::now() - Duration::from_secs(10)) }
     }
 
     fn update(&self, phase: &str, current: usize, total: Option<usize>, detail: &str, force: bool) {
-        if self.quiet {
+        if self.quiet && !self.json_events {
             return;
         }
         let mut last = self.last.lock().unwrap();
@@ -77,6 +80,18 @@ impl Progress {
         }
         *last = now;
         let elapsed = now.duration_since(self.started).as_secs_f32();
+        if self.json_events {
+            let total_json = total.map(|n| n.to_string()).unwrap_or_else(|| "null".to_string());
+            eprintln!(
+                "{{\"event\":\"progress\",\"phase\":\"{}\",\"done\":{},\"total\":{},\"detail\":\"{}\",\"elapsed_seconds\":{:.3}}}",
+                json_escape(phase),
+                current,
+                total_json,
+                json_escape(detail),
+                elapsed
+            );
+            return;
+        }
         if let Some(total) = total {
             let pct = if total == 0 { 100.0 } else { (current as f64 / total as f64) * 100.0 };
             eprint!("\r{}: {}/{} ({:5.1}%) | {} | {:.1}s", phase, current, total, pct, detail, elapsed);
@@ -89,7 +104,10 @@ impl Progress {
     }
 
     fn done(&self, msg: &str) {
-        if !self.quiet {
+        if self.json_events {
+            let elapsed = self.started.elapsed().as_secs_f32();
+            eprintln!("{{\"event\":\"phase_done\",\"message\":\"{}\",\"elapsed_seconds\":{:.3}}}", json_escape(msg), elapsed);
+        } else if !self.quiet {
             eprintln!("\r{}", msg);
         }
     }
@@ -111,7 +129,7 @@ fn run() -> io::Result<()> {
         return apply_cleanup_plan(plan, cfg.confirm.as_deref());
     }
     let total_started = Instant::now();
-    let progress = Arc::new(Progress::new(cfg.quiet));
+    let progress = Arc::new(Progress::new(cfg.quiet, cfg.json_events));
     let mut groups = find_duplicates(&cfg, progress)?;
     if cfg.compare {
         groups = filter_compare_groups(groups, &cfg.paths[0]);
@@ -119,6 +137,9 @@ fn run() -> io::Result<()> {
     let elapsed = total_started.elapsed();
     let elapsed_text = format_duration(elapsed);
     let total_wasted: u64 = groups.iter().map(|g| g.wasted_bytes).sum();
+    if cfg.json_events {
+        eprintln!("{{\"event\":\"done\",\"groups\":{},\"reclaimable_bytes\":{},\"elapsed_seconds\":{:.3}}}", groups.len(), total_wasted, elapsed.as_secs_f64());
+    }
 
     if cfg.clean {
         return run_clean_flow(&cfg, &groups, elapsed_text, total_wasted);
@@ -138,7 +159,7 @@ fn run() -> io::Result<()> {
     }
 
     if let Some(path) = &cfg.output {
-        let report = if cfg.json { render_json(&groups) } else { render_text(&groups, None) };
+        let report = if cfg.ui_json { render_ui_json(&cfg, &groups, elapsed) } else if cfg.json { render_json(&groups) } else { render_text(&groups, None) };
         fs::write(path, report)?;
         println!("Found {} duplicate groups; reclaimable: {} ({})", groups.len(), total_wasted, format_bytes(total_wasted));
         println!("Scan mode: {}; min-size: {}", cfg.scan_mode, format_bytes(cfg.min_size));
@@ -161,7 +182,9 @@ fn run() -> io::Result<()> {
         return Ok(());
     }
 
-    if cfg.json {
+    if cfg.ui_json {
+        print!("{}", render_ui_json(&cfg, &groups, elapsed));
+    } else if cfg.json {
         print!("{}", render_json(&groups));
     } else {
         print!("{}", render_text(&groups, cfg.max_groups));
@@ -186,6 +209,8 @@ fn parse_args() -> io::Result<Config> {
         scan_mode: "balanced".to_string(),
         no_byte_verify: false,
         json: false,
+        ui_json: false,
+        json_events: false,
         output: None,
         cleanup_plan: None,
         apply_plan: None,
@@ -209,6 +234,8 @@ fn parse_args() -> io::Result<Config> {
             "--follow-symlinks" => cfg.follow_symlinks = true,
             "--no-byte-verify" => cfg.no_byte_verify = true,
             "--json" => cfg.json = true,
+            "--ui-json" => { cfg.ui_json = true; cfg.json = true; }
+            "--json-events" => cfg.json_events = true,
             "--summary" => cfg.summary = true,
             "--quiet" => cfg.quiet = true,
             "--min-size" => {
@@ -264,6 +291,7 @@ fn parse_args() -> io::Result<Config> {
         cfg.output = None;
         cfg.cleanup_plan = None;
         cfg.json = false;
+        cfg.ui_json = false;
         run_clean_setup(&mut cfg, min_size_set)?;
     } else if cfg.interactive {
         run_wizard(&mut cfg, min_size_set)?;
@@ -459,7 +487,7 @@ fn next_value<I: Iterator<Item = String>>(args: &mut std::iter::Peekable<I>, nam
 }
 
 fn print_help() {
-    println!("DupeLens Core - fast exact duplicate scanner\n\nUsage: dupelens-core [options] PATH...\n\nOptions:\n  -r, --recursive          Recurse into subdirectories\n  -i, --interactive        Ask scan options interactively\n  --clean                  Scan + preview + optional Move to Trash flow\n  --compare                Compare roots: keep files from first path, report duplicates in later paths\n  --include-hidden         Include dotfiles and hidden dirs\n  --follow-symlinks        Follow symlinks\n  --mode MODE              Scan mode: quick=10MB, balanced=1MB, deep=1 byte; default: balanced\n  --min-size SIZE          Override minimum file size: bytes or 10KB/10MB/1GB\n  --no-byte-verify         Skip final byte verification\n  --json                   Output JSON\n  -o, --output FILE        Write full report to file\n  --plan FILE              Write safe cleanup plan JSON; does not delete files\n  --apply-plan FILE        Move plan candidates to Trash; requires --confirm \"MOVE TO TRASH\"\n  --confirm TEXT           Required confirmation for --apply-plan\n  --max-groups N           Max groups printed to terminal; 0 means all\n  --summary                Print only summary\n  --quiet                  Hide progress\n  --threads N              Hash worker threads\n  -h, --help               Show help");
+    println!("DupeLens Core - fast exact duplicate scanner\n\nUsage: dupelens-core [options] PATH...\n\nOptions:\n  -r, --recursive          Recurse into subdirectories\n  -i, --interactive        Ask scan options interactively\n  --clean                  Scan + preview + optional Move to Trash flow\n  --compare                Compare roots: keep files from first path, report duplicates in later paths\n  --include-hidden         Include dotfiles and hidden dirs\n  --follow-symlinks        Follow symlinks\n  --mode MODE              Scan mode: quick=10MB, balanced=1MB, deep=1 byte; default: balanced\n  --min-size SIZE          Override minimum file size: bytes or 10KB/10MB/1GB\n  --no-byte-verify         Skip final byte verification\n  --json                   Output legacy duplicate report JSON\n  --ui-json                Output GUI-ready dupelens-scan-v1 JSON\n  --json-events            Emit newline-delimited progress JSON to stderr\n  -o, --output FILE        Write full report to file\n  --plan FILE              Write safe cleanup plan JSON; does not delete files\n  --apply-plan FILE        Move plan candidates to Trash; requires --confirm \"MOVE TO TRASH\"\n  --confirm TEXT           Required confirmation for --apply-plan\n  --max-groups N           Max groups printed to terminal; 0 means all\n  --summary                Print only summary\n  --quiet                  Hide progress\n  --threads N              Hash worker threads\n  -h, --help               Show help");
 }
 
 fn parse_size(s: String) -> io::Result<u64> {
@@ -979,6 +1007,63 @@ fn render_cleanup_plan_json(groups: &[DuplicateGroup]) -> String {
     }
     out.push_str("\n  ]\n}\n");
     out
+}
+
+
+fn render_ui_json(cfg: &Config, groups: &[DuplicateGroup], elapsed: Duration) -> String {
+    let total_wasted: u64 = groups.iter().map(|g| g.wasted_bytes).sum();
+    let total_files: usize = groups.iter().map(|g| g.files.len()).sum();
+    let mode = if cfg.compare { "compare" } else { "scan" };
+    let mut out = String::new();
+    out.push_str("{\n");
+    out.push_str("  \"schema\": \"dupelens-scan-v1\",\n");
+    out.push_str(&format!("  \"mode\": \"{}\",\n", mode));
+    out.push_str(&format!("  \"scan_mode\": \"{}\",\n", json_escape(&cfg.scan_mode)));
+    out.push_str(&format!("  \"min_size_bytes\": {},\n", cfg.min_size));
+    out.push_str(&format!("  \"recursive\": {},\n", cfg.recursive));
+    if cfg.compare {
+        out.push_str(&format!("  \"primary_root\": \"{}\",\n", json_escape(&cfg.paths[0].display().to_string())));
+    } else {
+        out.push_str("  \"primary_root\": null,\n");
+    }
+    out.push_str("  \"roots\": [");
+    for (i, path) in cfg.paths.iter().enumerate() {
+        if i > 0 { out.push_str(", "); }
+        out.push_str(&format!("\"{}\"", json_escape(&path.display().to_string())));
+    }
+    out.push_str("],\n");
+    out.push_str(&format!("  \"summary\": {{\"groups\": {}, \"files\": {}, \"reclaimable_bytes\": {}, \"elapsed_seconds\": {:.3}}},\n", groups.len(), total_files, total_wasted, elapsed.as_secs_f64()));
+    out.push_str("  \"groups\": [\n");
+    for (i, g) in groups.iter().enumerate() {
+        if i > 0 { out.push_str(",\n"); }
+        let keep = &g.files[0];
+        out.push_str(&format!("    {{\n      \"id\": \"{}\",\n      \"size\": {},\n      \"reclaimable_bytes\": {},\n      \"hash\": \"{:016x}\",\n      \"keep\": \"{}\",\n      \"trash_candidates\": [", group_id(g), g.size, g.wasted_bytes, g.hash, json_escape(&keep.path.display().to_string())));
+        for (j, f) in g.files.iter().skip(1).enumerate() {
+            if j > 0 { out.push_str(", "); }
+            out.push_str(&format!("\"{}\"", json_escape(&f.path.display().to_string())));
+        }
+        out.push_str("],\n      \"files\": [\n");
+        for (j, f) in g.files.iter().enumerate() {
+            if j > 0 { out.push_str(",\n"); }
+            let role = if j == 0 { "keep" } else { "trash_candidate" };
+            out.push_str(&format!("        {{\"id\": \"{}\", \"path\": \"{}\", \"size\": {}, \"mtime\": {}, \"role\": \"{}\"}}", file_id(f), json_escape(&f.path.display().to_string()), f.size, f.mtime, role));
+        }
+        out.push_str("\n      ]\n    }");
+    }
+    out.push_str("\n  ]\n}\n");
+    out
+}
+
+fn group_id(group: &DuplicateGroup) -> String {
+    format!("{:016x}-{}", group.hash, group.size)
+}
+
+fn file_id(file: &FileInfo) -> String {
+    let mut h = Fnv64::new();
+    h.update(file.path.display().to_string().as_bytes());
+    h.update(&file.size.to_le_bytes());
+    h.update(&file.mtime.to_le_bytes());
+    format!("{:016x}", h.finish())
 }
 
 fn render_json(groups: &[DuplicateGroup]) -> String {

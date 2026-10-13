@@ -17,41 +17,56 @@ Build a visual interface for duplicate cleanup, focused on compare-mode safety:
 
 ### Phase 1 — stabilize Rust core for UI
 
-Add a stable UI-facing JSON schema:
+Implemented in the Rust core via `--ui-json`. The stable UI-facing JSON schema:
 
 ```json
 {
   "schema": "dupelens-scan-v1",
   "mode": "compare",
+  "scan_mode": "balanced",
+  "min_size_bytes": 1048576,
+  "recursive": true,
   "primary_root": "/Users/me/Downloads",
   "roots": ["/Users/me/Downloads", "/Volumes/Backup/Old Downloads"],
   "summary": {
     "groups": 12,
     "files": 39,
-    "reclaimable_bytes": 123456789
+    "reclaimable_bytes": 123456789,
+    "elapsed_seconds": 1.234
   },
   "groups": [
     {
       "id": "...",
       "size": 123,
       "reclaimable_bytes": 246,
+      "hash": "...",
       "keep": "...",
       "trash_candidates": ["..."],
-      "files": []
+      "files": [
+        {"id":"...", "path":"...", "size":123, "mtime":0, "role":"keep"},
+        {"id":"...", "path":"...", "size":123, "mtime":0, "role":"trash_candidate"}
+      ]
     }
   ]
 }
 ```
 
-Add JSON progress events:
+Implemented in the Rust core via `--json-events`. Events are newline-delimited
+JSON on stderr while the final report remains on stdout:
 
-```json
-{"event":"phase","name":"scanning"}
-{"event":"progress","phase":"hashing","done":120,"total":500}
-{"event":"done","summary":{"groups":12,"reclaimable_bytes":123456789}}
+```bash
+./target/release/dupelens-core --compare -r PRIMARY BACKUP --ui-json --json-events > scan.json 2> events.ndjson
 ```
 
-Add stable IDs:
+Progress event examples:
+
+```json
+{"event":"progress","phase":"Partial hashing","done":120,"total":500,"detail":"file.bin","elapsed_seconds":0.420}
+{"event":"phase_done","message":"Full hashing complete: 12 duplicate groups","elapsed_seconds":1.100}
+{"event":"done","groups":12,"reclaimable_bytes":123456789,"elapsed_seconds":1.234}
+```
+
+Stable IDs are included:
 
 - `group_id = hash + size`
 - `file_id = hash(path + size + mtime)`

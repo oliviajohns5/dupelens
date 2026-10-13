@@ -110,6 +110,22 @@ JSON report:
 ./target/release/dupelens-core -r ~/Downloads --quiet --mode balanced --json -o duplicates.json
 ```
 
+GUI-ready JSON report:
+
+```bash
+./target/release/dupelens-core --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --quiet --ui-json -o scan.json
+```
+
+Progress events for a visual interface are newline-delimited JSON on stderr, so
+stdout can still be the final JSON report:
+
+```bash
+./target/release/dupelens-core --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --ui-json --json-events > scan.json 2> events.ndjson
+```
+
+The UI schema is `dupelens-scan-v1` and includes mode, roots, summary, stable
+group IDs, stable file IDs, `keep`, `trash_candidates`, and file roles.
+
 Safe cleanup plan, no deletion:
 
 ```bash
