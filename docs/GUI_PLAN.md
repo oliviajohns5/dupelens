@@ -83,6 +83,10 @@ cd core && cargo build --release && cd ..
 python3 app/server.py
 ```
 
+The local server intentionally stays running while the browser UI is open.
+Stop it with `Ctrl+C` in the Terminal window. Request logging is suppressed so
+browser polling does not fill the terminal during scans.
+
 Open `http://127.0.0.1:8787`.
 
 Files:

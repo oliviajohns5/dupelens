@@ -122,6 +122,9 @@ cd core && cargo build --release && cd ..
 python3 app/server.py
 ```
 
+The local server stays running while the browser UI is open. Stop it with
+`Ctrl+C` in the Terminal window.
+
 Open:
 
 ```text

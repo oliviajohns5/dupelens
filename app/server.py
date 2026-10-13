@@ -134,7 +134,11 @@ class Handler(BaseHTTPRequestHandler):
     server_version = "DupeLensLocal/0.1"
 
     def log_message(self, format: str, *args) -> None:  # noqa: A002 - stdlib API name
-        print(f"[{self.log_date_time_string()}] {format % args}")
+        # Keep the Mac Terminal quiet during scans. The browser polls /api/jobs
+        # every few hundred milliseconds, and the default stdlib handler prints
+        # one line per request, which looks like the scan is doing something
+        # wrong even when it is working normally.
+        return
 
     def send_payload(self, status: int, body: bytes, content_type: str) -> None:
         self.send_response(status)
@@ -197,6 +201,7 @@ class Handler(BaseHTTPRequestHandler):
 def main() -> int:
     print("DupeLens local UI")
     print(f"Open: http://{HOST}:{PORT}")
+    print("Keep this Terminal window open while using the UI. Press Ctrl+C here to stop the local server.")
     if not CORE.exists():
         print(f"Core binary missing: {CORE}")
         print("Build it first: cd core && cargo build --release")
