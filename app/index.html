@@ -8,39 +8,38 @@
 </head>
 <body>
   <main class="shell">
-    <header class="hero">
-      <p class="eyebrow">DupeLens local prototype</p>
-      <h1>Find duplicates without guessing what to delete.</h1>
-      <p class="sub">Start with one folder to see all duplicates, or compare a main folder with an old backup/import folder.</p>
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DupeLens</p>
+        <h1>Find duplicate files</h1>
+      </div>
+      <p class="sub">Default: scan one folder. Compare mode is only for old backups/imports.</p>
     </header>
 
-    <section class="card setup">
+    <section class="card setup compact">
       <div class="modePicker" role="tablist" aria-label="Scan mode">
         <button id="singleMode" class="mode active" type="button">
-          <strong>1. Scan one folder</strong>
-          <span>Best first step: find duplicates inside Downloads or another folder.</span>
+          <strong>Scan one folder</strong>
+          <span>Find duplicates inside Downloads or another folder.</span>
         </button>
         <button id="compareMode" class="mode" type="button">
-          <strong>2. Compare with backup</strong>
-          <span>Protect a main folder, find copies in an old backup/import folder.</span>
+          <strong>Compare with backup</strong>
+          <span>Protect primary, find copies in backup/import.</span>
         </button>
       </div>
 
       <div id="singleFields" class="fields">
-        <label>Folder to scan
-          <span>Example: /Users/onemanseo/Downloads</span>
+        <label>Folder path
           <input id="singlePath" placeholder="/Users/onemanseo/Downloads" />
         </label>
       </div>
 
       <div id="compareFields" class="fields hidden">
         <div class="grid">
-          <label>Primary folder
-            <span>Protected KEEP side. DupeLens will not recommend deleting from here.</span>
+          <label>Primary folder <span>protected</span>
             <input id="primary" placeholder="/Users/onemanseo/Downloads" />
           </label>
-          <label>Backup/import folder
-            <span>Candidate side. Duplicate copies here can be marked TRASH.</span>
+          <label>Backup/import folder <span>candidate side</span>
             <input id="backup" placeholder="/Volumes/Backup/Old Downloads" />
           </label>
         </div>
@@ -48,22 +47,22 @@
 
       <div id="warning" class="warning hidden"></div>
 
-      <div class="controls">
-        <label class="inline"><input id="recursive" type="checkbox" checked /> Include subfolders</label>
-        <label class="inline"><input id="includeHidden" type="checkbox" /> Include hidden files</label>
+      <div class="controls compactControls">
         <label>Depth
           <select id="scanMode">
-            <option value="quick">Quick — big files only ≥10MB</option>
-            <option value="balanced" selected>Balanced — practical ≥1MB</option>
-            <option value="deep">Deep — every file ≥1 byte</option>
+            <option value="quick">Quick ≥10MB</option>
+            <option value="balanced" selected>Balanced ≥1MB</option>
+            <option value="deep">Deep all files</option>
           </select>
         </label>
-        <button id="scanBtn">Scan for duplicates</button>
+        <label class="inline"><input id="recursive" type="checkbox" checked /> Subfolders</label>
+        <label class="inline"><input id="includeHidden" type="checkbox" /> Hidden</label>
+        <button id="scanBtn">Scan</button>
       </div>
-      <p class="hint">Browser folder pickers come later. For now paste a folder path from Finder: right-click folder → hold Option → Copy as Pathname.</p>
+      <p class="hint compactHint">Paste path from Finder: right-click folder → hold Option → Copy as Pathname.</p>
     </section>
 
-    <section id="status" class="card muted">Choose a mode and folder path, then scan.</section>
+    <section id="status" class="statusLine">Choose a folder path, then scan.</section>
 
     <section id="summary" class="summary hidden"></section>
     <section id="groups" class="groups"></section>

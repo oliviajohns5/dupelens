@@ -39,6 +39,18 @@ function setStatus(text, detail = '') {
   statusBox.innerHTML = `<strong>${escapeHtml(text)}</strong>${detail ? `<pre>${escapeHtml(detail)}</pre>` : ''}`;
 }
 
+function eventLine(event) {
+  if (!event) return 'Starting...';
+  if (event.event === 'progress') {
+    const total = event.total ? `/${event.total}` : '';
+    const done = Number.isFinite(event.done) ? `${event.done}${total}` : '';
+    return `${event.phase || 'Scanning'} ${done}`.trim();
+  }
+  if (event.event === 'phase_done') return event.message || 'Phase complete';
+  if (event.event === 'done') return `${event.groups || 0} groups · ${bytes(event.reclaimable_bytes || 0)} reclaimable`;
+  return event.message || event.event || '';
+}
+
 function metric(label, value) {
   return `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
 }
@@ -119,8 +131,7 @@ async function poll(jobId) {
     const events = job.events || [];
     const last = events[events.length - 1];
     if (job.status === 'running') {
-      const detail = last ? JSON.stringify(last, null, 2) : 'Starting...';
-      setStatus('Scanning...', detail);
+      setStatus('Scanning…', eventLine(last));
       await new Promise((resolve) => setTimeout(resolve, 500));
       continue;
     }
