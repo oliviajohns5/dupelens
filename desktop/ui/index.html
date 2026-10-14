@@ -1,0 +1,81 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>DupeLens</title>
+  <link rel="stylesheet" href="./styles.css" />
+</head>
+<body>
+  <main class="shell">
+    <header class="topbar">
+      <div>
+        <p class="eyebrow">DupeLens Desktop</p>
+        <h1>Find duplicate files</h1>
+      </div>
+      <p class="sub">Rust scanner inside a desktop app. No Python server.</p>
+    </header>
+
+    <section class="card setup compact">
+      <div class="modePicker" role="tablist" aria-label="Scan mode">
+        <button id="singleMode" class="mode active" type="button">
+          <strong>Scan one folder</strong>
+          <span>Find duplicates inside Downloads or another folder.</span>
+        </button>
+        <button id="compareMode" class="mode" type="button">
+          <strong>Compare with backup</strong>
+          <span>Protect primary, find copies in backup/import.</span>
+        </button>
+      </div>
+
+      <div id="singleFields" class="fields">
+        <label>Folder
+          <div class="pathRow">
+            <input id="singlePath" placeholder="Choose a folder…" readonly />
+            <button class="secondary" data-pick="singlePath" type="button">Choose folder</button>
+          </div>
+        </label>
+      </div>
+
+      <div id="compareFields" class="fields hidden">
+        <div class="grid">
+          <label>Primary folder <span>protected</span>
+            <div class="pathRow">
+              <input id="primary" placeholder="Choose primary folder…" readonly />
+              <button class="secondary" data-pick="primary" type="button">Choose</button>
+            </div>
+          </label>
+          <label>Backup/import folder <span>candidate side</span>
+            <div class="pathRow">
+              <input id="backup" placeholder="Choose backup or disk…" readonly />
+              <button class="secondary" data-pick="backup" type="button">Choose</button>
+            </div>
+          </label>
+        </div>
+      </div>
+
+      <div id="warning" class="warning hidden"></div>
+
+      <div class="controls compactControls">
+        <label>Depth
+          <select id="scanMode">
+            <option value="quick">Quick ≥10MB</option>
+            <option value="balanced" selected>Balanced ≥1MB</option>
+            <option value="deep">Deep all files</option>
+          </select>
+        </label>
+        <label class="inline"><input id="recursive" type="checkbox" checked /> Subfolders</label>
+        <label class="inline"><input id="includeHidden" type="checkbox" /> Hidden</label>
+        <button id="scanBtn">Scan</button>
+      </div>
+      <p class="hint compactHint">Choose explicit folders only. Cleanup is not enabled in this desktop preview.</p>
+    </section>
+
+    <section id="status" class="statusLine">Choose a folder, then scan.</section>
+
+    <section id="summary" class="summary hidden"></section>
+    <section id="groups" class="groups"></section>
+  </main>
+  <script type="module" src="./app.js"></script>
+</body>
+</html>

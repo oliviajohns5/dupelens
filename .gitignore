@@ -11,6 +11,13 @@ __pycache__/
 # Rust
 /target/
 core/target/
+desktop/src-tauri/target/
+
+# Node / Tauri
+node_modules/
+desktop/node_modules/
+desktop/ui-dist/
+desktop/src-tauri/gen/
 
 # DupeLens outputs
 cleanup-plan.json

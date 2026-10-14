@@ -1,0 +1,21 @@
+{
+  "name": "dupelens-desktop",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "tauri dev",
+    "build": "tauri build",
+    "check": "tauri info",
+    "ui:dev": "vite ui --host 127.0.0.1 --port 1420 --strictPort",
+    "ui:build": "vite build ui --outDir ../ui-dist --emptyOutDir"
+  },
+  "dependencies": {
+    "@tauri-apps/api": "^2.8.0",
+    "@tauri-apps/plugin-dialog": "^2.4.0"
+  },
+  "devDependencies": {
+    "@tauri-apps/cli": "^2.8.4",
+    "vite": "^7.1.0"
+  }
+}

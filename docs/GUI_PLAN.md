@@ -114,10 +114,27 @@ UI flow:
 
 Options:
 
-- Tauri: Rust backend + web UI, fastest cross-platform desktop path.
+- Tauri: Rust backend + web UI, fastest cross-platform desktop path. Initial preview lives in `desktop/` and calls the Rust core directly; Python is not in the product path.
 - SwiftUI: best native Mac app path, but requires macOS/Xcode for full build/test/signing.
 
 Recommended: prototype UI locally first, then decide between Tauri and SwiftUI once the product flow is proven.
+
+Run the Tauri preview:
+
+```bash
+cd dupelens
+cd core && cargo build --release && cd ..
+cd desktop
+npm install
+npm run dev
+```
+
+Build a `.app`/bundle on macOS:
+
+```bash
+cd desktop
+npm run build
+```
 
 ## Safety requirements for GUI
 

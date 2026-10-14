@@ -100,4 +100,16 @@ grep -q 'Choose disk' app/index.html
 grep -q 'data-pick' app/index.html
 grep -q 'pickFolder' app/app.js
 
+printf '== Desktop app static checks ==\n'
+test -f desktop/package.json
+test -f desktop/src-tauri/Cargo.toml
+test -f desktop/src-tauri/tauri.conf.json
+test -f desktop/src-tauri/src/lib.rs
+test -f desktop/ui/index.html
+test -f desktop/ui/app.js
+test -f desktop/ui/styles.css
+grep -q 'scan_duplicates' desktop/src-tauri/src/lib.rs
+grep -q '@tauri-apps/plugin-dialog' desktop/package.json
+grep -q 'No Python server' desktop/ui/index.html
+
 printf '== Done ==\n'

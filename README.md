@@ -13,6 +13,8 @@ Early MVP / prototype.
 Current repo contains:
 
 - `core/` — Rust CLI core, the product backend going forward.
+- `desktop/` — Tauri desktop app preview using the Rust core directly.
+- `app/` — temporary local web prototype kept for comparison/testing.
 - `prototype-python/` — Python reference prototype used to validate behavior and UX.
 - `docs/` — product notes and GUI transition plan.
 
@@ -113,6 +115,28 @@ python3 dupelens.py --compare -r ~/Downloads "/Volumes/Backup/Old Downloads" --q
 ## GUI direction
 
 DupeLens should move toward a visual interface around the Rust core, not a broad cleaner.
+
+Run the desktop preview on macOS:
+
+```bash
+cd dupelens
+cd core && cargo build --release && cd ..
+cd desktop
+npm install
+npm run dev
+```
+
+The desktop preview uses Tauri: native window, native folder picker, and the
+Rust scanner. It does not use the Python local server.
+
+Build a desktop bundle:
+
+```bash
+cd desktop
+npm run build
+```
+
+The older local web prototype is still available for quick browser testing:
 
 Run the current local web prototype:
 
