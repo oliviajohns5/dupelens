@@ -48,7 +48,7 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .isScanning .statusLine { position: relative; overflow: hidden; border-color: rgba(125,211,252,.5); }
 .isScanning .statusLine::after { content: ""; position: absolute; left: -40%; bottom: 0; width: 40%; height: 3px; background: linear-gradient(90deg, transparent, #38bdf8, #a78bfa, transparent); animation: scanbar 1.15s ease-in-out infinite; }
 @keyframes scanbar { from { left: -40%; } to { left: 100%; } }
-.summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
+.summary { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 8px; margin: 10px 0; }
 .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
 .metric strong { display: block; font-size: 21px; line-height: 1.05; }
 .metric span { color: var(--muted); font-size: 11px; }
@@ -56,8 +56,13 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .group { background: var(--panel); border: 1px solid var(--line); border-radius: 15px; padding: 12px; }
 .groupHead { display: flex; justify-content: space-between; gap: 10px; border-bottom: 1px solid var(--line); padding-bottom: 8px; margin-bottom: 8px; }
 .badge { border: 1px solid var(--line); border-radius: 999px; color: var(--accent); padding: 4px 8px; font-size: 11px; white-space: nowrap; }
-.file { display: grid; gap: 4px; padding: 8px 0; border-bottom: 1px solid rgba(255,255,255,.06); }
+.file { display: grid; grid-template-columns: 34px 1fr; gap: 10px; padding: 9px 0; border-bottom: 1px solid rgba(255,255,255,.06); align-items: start; }
 .file:last-child { border-bottom: 0; }
+.fileIcon { width: 32px; height: 32px; display: grid; place-items: center; background: rgba(255,255,255,.055); border: 1px solid var(--line); border-radius: 10px; }
+.fileBody { min-width: 0; display: grid; gap: 3px; }
+.fileTop { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fileTop strong { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fileTop span { color: var(--muted); font-size: 12px; white-space: nowrap; }
 .role { font-size: 11px; font-weight: 900; letter-spacing: .07em; }
 .keep { color: var(--good); }
 .trash_candidate { color: var(--warn); }

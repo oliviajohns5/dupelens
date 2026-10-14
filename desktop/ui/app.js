@@ -56,6 +56,28 @@ function metric(label, value) {
   return `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
 }
 
+function filename(path) {
+  const parts = String(path || '').split('/').filter(Boolean);
+  return parts[parts.length - 1] || path || 'Unknown file';
+}
+
+function dirname(path) {
+  const value = String(path || '');
+  const index = value.lastIndexOf('/');
+  return index > 0 ? value.slice(0, index) : value;
+}
+
+function fileIcon(path) {
+  const lower = String(path || '').toLowerCase();
+  if (/\.(png|jpe?g|gif|webp|heic|tiff?|svg)$/.test(lower)) return '🖼️';
+  if (/\.(mov|mp4|m4v|avi|mkv|webm)$/.test(lower)) return '🎞️';
+  if (/\.(mp3|wav|m4a|aac|flac|ogg)$/.test(lower)) return '🎧';
+  if (/\.(pdf|docx?|xlsx?|pptx?|txt|rtf|md)$/.test(lower)) return '📄';
+  if (/\.(zip|rar|7z|tar|gz|dmg|pkg)$/.test(lower)) return '📦';
+  if (lower.includes('/target/') || lower.includes('/node_modules/') || lower.includes('/.git/')) return '⚙️';
+  return '📁';
+}
+
 function emptyMessage(result) {
   if (result.mode === 'compare') {
     return 'No duplicates were found across those two folders. If you used the same path twice, switch to “Scan one folder”.';
@@ -76,6 +98,7 @@ function renderResult(result) {
     metric('files in groups', s.files || 0),
     metric('reclaimable', bytes(s.reclaimable_bytes || 0)),
     metric('elapsed', `${Number(s.elapsed_seconds || 0).toFixed(2)}s`),
+    Number(s.hidden_developer_groups || 0) ? metric('hidden dev/build groups', s.hidden_developer_groups) : '',
   ].join('');
 
   const groups = result.groups || [];
@@ -90,13 +113,19 @@ function renderResult(result) {
           <strong>Group ${index + 1}</strong>
           <div class="meta">${group.files.length} files · ${bytes(group.size)} each · ${bytes(group.reclaimable_bytes)} reclaimable</div>
         </div>
-        <span class="badge">${escapeHtml(group.id)}</span>
+        <span class="badge">${bytes(group.reclaimable_bytes)} reclaimable</span>
       </div>
       ${group.files.map((file) => `
         <div class="file">
-          <div class="role ${file.role}">${escapeHtml(roleText(file, result))}</div>
-          <div class="path">${escapeHtml(file.path)}</div>
-          <div class="meta">${bytes(file.size)} · id ${escapeHtml(file.id)}</div>
+          <div class="fileIcon">${fileIcon(file.path)}</div>
+          <div class="fileBody">
+            <div class="fileTop">
+              <strong>${escapeHtml(filename(file.path))}</strong>
+              <span>${bytes(file.size)}</span>
+            </div>
+            <div class="role ${file.role}">${escapeHtml(roleText(file, result))}</div>
+            <div class="path">${escapeHtml(dirname(file.path))}</div>
+          </div>
         </div>
       `).join('')}
     </article>
@@ -146,6 +175,7 @@ scanBtn.addEventListener('click', async () => {
       scan_mode: $('scanMode').value,
       recursive: $('recursive').checked,
       include_hidden: $('includeHidden').checked,
+      include_dev_folders: $('includeDevFolders').checked,
     };
     await nextPaint();
     const result = await invoke('scan_duplicates', { request: payload });

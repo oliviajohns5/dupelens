@@ -129,6 +129,11 @@ npm run dev
 The desktop preview uses Tauri: native window, native folder picker, and the
 Rust scanner. It does not use the Python local server.
 
+The desktop UI hides developer/build folders by default (`.git`,
+`node_modules`, `target`, `build`, `dist`, `.cache`, `__pycache__`) so normal
+scans do not fill results with project artifacts. Turn on `Dev/build folders`
+only when you intentionally want to inspect those paths.
+
 Build a desktop bundle:
 
 ```bash

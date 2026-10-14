@@ -11,7 +11,19 @@ struct ScanRequest {
     scan_mode: String,
     recursive: bool,
     include_hidden: bool,
+    include_dev_folders: bool,
 }
+
+const DEV_SEGMENTS: &[&str] = &[
+    ".git",
+    "node_modules",
+    "target",
+    "dist",
+    "build",
+    ".next",
+    ".cache",
+    "__pycache__",
+];
 
 fn repo_root() -> PathBuf {
     PathBuf::from(env!("CARGO_MANIFEST_DIR"))
@@ -83,8 +95,57 @@ fn run_scan(request: ScanRequest) -> Result<Value, String> {
         return Err(if stderr.is_empty() { stdout } else { stderr });
     }
 
-    serde_json::from_slice(&output.stdout)
-        .map_err(|err| format!("Rust core returned invalid JSON: {err}"))
+    let mut result: Value = serde_json::from_slice(&output.stdout)
+        .map_err(|err| format!("Rust core returned invalid JSON: {err}"))?;
+    if !request.include_dev_folders {
+        hide_developer_groups(&mut result);
+    }
+    Ok(result)
+}
+
+fn hide_developer_groups(result: &mut Value) {
+    let Some(groups) = result.get_mut("groups").and_then(Value::as_array_mut) else {
+        return;
+    };
+    let before = groups.len();
+    groups.retain(|group| !group_contains_dev_path(group));
+    let hidden = before.saturating_sub(groups.len());
+
+    let files: u64 = groups
+        .iter()
+        .map(|group| group.get("files").and_then(Value::as_array).map(|files| files.len() as u64).unwrap_or(0))
+        .sum();
+    let reclaimable: u64 = groups
+        .iter()
+        .map(|group| group.get("reclaimable_bytes").and_then(Value::as_u64).unwrap_or(0))
+        .sum();
+
+    if let Some(summary) = result.get_mut("summary").and_then(Value::as_object_mut) {
+        summary.insert("groups".to_string(), Value::from(groups.len() as u64));
+        summary.insert("files".to_string(), Value::from(files));
+        summary.insert("reclaimable_bytes".to_string(), Value::from(reclaimable));
+        summary.insert("hidden_developer_groups".to_string(), Value::from(hidden as u64));
+    }
+}
+
+fn group_contains_dev_path(group: &Value) -> bool {
+    group
+        .get("files")
+        .and_then(Value::as_array)
+        .map(|files| {
+            files.iter().any(|file| {
+                file.get("path")
+                    .and_then(Value::as_str)
+                    .map(path_has_dev_segment)
+                    .unwrap_or(false)
+            })
+        })
+        .unwrap_or(false)
+}
+
+fn path_has_dev_segment(path: &str) -> bool {
+    path.split(['/', '\\'])
+        .any(|segment| DEV_SEGMENTS.iter().any(|blocked| segment == *blocked))
 }
 
 #[cfg_attr(mobile, tauri::mobile_entry_point)]

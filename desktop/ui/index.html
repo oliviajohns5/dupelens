@@ -66,9 +66,10 @@
         </label>
         <label class="inline"><input id="recursive" type="checkbox" checked /> Subfolders</label>
         <label class="inline"><input id="includeHidden" type="checkbox" /> Hidden</label>
+        <label class="inline"><input id="includeDevFolders" type="checkbox" /> Dev/build folders</label>
         <button id="scanBtn">Scan</button>
       </div>
-      <p class="hint compactHint">Choose explicit folders only. Cleanup is not enabled in this desktop preview.</p>
+      <p class="hint compactHint">By default DupeLens hides .git, node_modules, target, build, dist and cache folders. Cleanup is not enabled yet.</p>
     </section>
 
     <section id="status" class="statusLine">Choose a folder, then scan.</section>
