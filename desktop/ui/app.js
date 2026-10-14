@@ -42,6 +42,16 @@ function setStatus(text, detail = '') {
   statusBox.innerHTML = `<strong>${escapeHtml(text)}</strong>${detail ? `<pre>${escapeHtml(detail)}</pre>` : ''}`;
 }
 
+function setScanning(isScanning) {
+  document.body.classList.toggle('isScanning', isScanning);
+  scanBtn.disabled = isScanning;
+  scanBtn.textContent = isScanning ? 'Scanning…' : 'Scan';
+}
+
+function nextPaint() {
+  return new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+}
+
 function metric(label, value) {
   return `<div class="metric"><strong>${value}</strong><span>${label}</span></div>`;
 }
@@ -126,7 +136,7 @@ scanBtn.addEventListener('click', async () => {
   summaryBox.classList.add('hidden');
   groupsBox.innerHTML = '';
   if (!validateInputs()) return;
-  scanBtn.disabled = true;
+  setScanning(true);
   setStatus('Scanning…', 'Rust core is checking exact duplicates. Nothing will be deleted.');
   try {
     const payload = {
@@ -137,6 +147,7 @@ scanBtn.addEventListener('click', async () => {
       recursive: $('recursive').checked,
       include_hidden: $('includeHidden').checked,
     };
+    await nextPaint();
     const result = await invoke('scan_duplicates', { request: payload });
     const modeText = result.mode === 'compare'
       ? 'Compare scan complete. Primary folder stayed protected.'
@@ -146,7 +157,7 @@ scanBtn.addEventListener('click', async () => {
   } catch (err) {
     setStatus('Scan failed', err.message || String(err));
   } finally {
-    scanBtn.disabled = false;
+    setScanning(false);
     validateInputs();
   }
 });

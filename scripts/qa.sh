@@ -110,8 +110,11 @@ test -f desktop/ui/index.html
 test -f desktop/ui/app.js
 test -f desktop/ui/styles.css
 grep -q 'scan_duplicates' desktop/src-tauri/src/lib.rs
+grep -q 'spawn_blocking' desktop/src-tauri/src/lib.rs
 grep -q '@tauri-apps/plugin-dialog' desktop/package.json
 grep -q 'dialog:allow-open' desktop/src-tauri/capabilities/default.json
 grep -q 'No Python server' desktop/ui/index.html
+grep -q 'isScanning' desktop/ui/app.js
+grep -q 'scanbar' desktop/ui/styles.css
 
 printf '== Done ==\n'

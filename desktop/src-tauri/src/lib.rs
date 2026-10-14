@@ -27,7 +27,13 @@ fn core_binary() -> PathBuf {
 }
 
 #[tauri::command]
-fn scan_duplicates(request: ScanRequest) -> Result<Value, String> {
+async fn scan_duplicates(request: ScanRequest) -> Result<Value, String> {
+    tauri::async_runtime::spawn_blocking(move || run_scan(request))
+        .await
+        .map_err(|err| format!("Scan worker failed: {err}"))?
+}
+
+fn run_scan(request: ScanRequest) -> Result<Value, String> {
     let core = core_binary();
     if !core.exists() {
         return Err(format!(

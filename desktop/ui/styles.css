@@ -11,6 +11,7 @@
 }
 * { box-sizing: border-box; }
 body { margin: 0; background: radial-gradient(circle at top left, #162034, var(--bg) 42%); color: var(--text); font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif; }
+body.isScanning { cursor: progress; }
 .shell { max-width: 1120px; margin: 0 auto; padding: 20px 18px 48px; }
 .topbar { display: flex; align-items: end; justify-content: space-between; gap: 18px; margin-bottom: 12px; }
 .eyebrow { color: var(--accent); text-transform: uppercase; letter-spacing: .16em; font-size: 11px; font-weight: 800; margin: 0 0 4px; }
@@ -44,6 +45,9 @@ button:disabled { opacity: .5; cursor: not-allowed; }
 .statusLine { border: 1px solid var(--line); background: rgba(17,22,33,.78); color: var(--muted); border-radius: 14px; padding: 10px 12px; margin: 10px 0; min-height: 42px; display: flex; align-items: center; justify-content: space-between; gap: 12px; }
 .statusLine strong { color: var(--text); }
 .statusLine pre { margin: 0; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 55%; }
+.isScanning .statusLine { position: relative; overflow: hidden; border-color: rgba(125,211,252,.5); }
+.isScanning .statusLine::after { content: ""; position: absolute; left: -40%; bottom: 0; width: 40%; height: 3px; background: linear-gradient(90deg, transparent, #38bdf8, #a78bfa, transparent); animation: scanbar 1.15s ease-in-out infinite; }
+@keyframes scanbar { from { left: -40%; } to { left: 100%; } }
 .summary { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; margin: 10px 0; }
 .metric { background: var(--panel); border: 1px solid var(--line); border-radius: 14px; padding: 10px 12px; }
 .metric strong { display: block; font-size: 21px; line-height: 1.05; }
