@@ -134,6 +134,9 @@ The desktop UI hides developer/build folders by default (`.git`,
 scans do not fill results with project artifacts. Turn on `Dev/build folders`
 only when you intentionally want to inspect those paths.
 
+Quick location chips are shown for common folders like `Downloads`, `Desktop`,
+`Documents`, and mounted `/Volumes/*` disks when available.
+
 Build a desktop bundle:
 
 ```bash

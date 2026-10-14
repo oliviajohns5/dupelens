@@ -117,8 +117,11 @@ grep -q 'No Python server' desktop/ui/index.html
 grep -q 'isScanning' desktop/ui/app.js
 grep -q 'scanbar' desktop/ui/styles.css
 grep -q 'include_dev_folders' desktop/src-tauri/src/lib.rs
+grep -q 'common_locations' desktop/src-tauri/src/lib.rs
 grep -q 'hidden_developer_groups' desktop/ui/app.js
 grep -q 'Dev/build folders' desktop/ui/index.html
 grep -q 'fileIcon' desktop/ui/styles.css
+grep -q 'quickLocations' desktop/ui/index.html
+grep -q 'quickChip' desktop/ui/styles.css
 
 printf '== Done ==\n'

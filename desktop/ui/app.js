@@ -10,6 +10,7 @@ const singleMode = $('singleMode');
 const compareMode = $('compareMode');
 const singleFields = $('singleFields');
 const compareFields = $('compareFields');
+const quickLocations = $('quickLocations');
 const warning = $('warning');
 let activeMode = 'single';
 
@@ -161,6 +162,35 @@ function validateInputs() {
   return true;
 }
 
+function setPath(targetId, path) {
+  $(targetId).value = path;
+  setStatus('Folder selected', path);
+  validateInputs();
+}
+
+async function loadQuickLocations() {
+  try {
+    const locations = await invoke('common_locations');
+    const preferred = ['Downloads', 'Desktop', 'Documents'];
+    const sorted = locations.sort((a, b) => {
+      const ai = preferred.indexOf(a.label);
+      const bi = preferred.indexOf(b.label);
+      if (ai !== -1 || bi !== -1) return (ai === -1 ? 99 : ai) - (bi === -1 ? 99 : bi);
+      return a.label.localeCompare(b.label);
+    });
+    quickLocations.innerHTML = sorted.map((item) => `
+      <button class="quickChip ${item.kind === 'disk' ? 'disk' : ''}" type="button" data-path="${escapeHtml(item.path)}">
+        ${escapeHtml(item.label)}
+      </button>
+    `).join('');
+    quickLocations.querySelectorAll('[data-path]').forEach((button) => {
+      button.addEventListener('click', () => setPath('singlePath', button.dataset.path));
+    });
+  } catch (err) {
+    quickLocations.innerHTML = '';
+  }
+}
+
 scanBtn.addEventListener('click', async () => {
   summaryBox.classList.add('hidden');
   groupsBox.innerHTML = '';
@@ -200,9 +230,7 @@ async function pickFolder(targetId) {
       setStatus('Picker cancelled');
       return;
     }
-    $(targetId).value = selected;
-    setStatus('Folder selected', selected);
-    validateInputs();
+    setPath(targetId, selected);
   } catch (err) {
     setStatus('Picker failed', err.message || String(err));
   }
@@ -216,3 +244,4 @@ document.querySelectorAll('[data-pick]').forEach((button) => {
 });
 
 setMode('single');
+loadQuickLocations();

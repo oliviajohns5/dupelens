@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Serialize};
 use serde_json::Value;
 use std::path::PathBuf;
 use std::process::Command;
@@ -12,6 +12,13 @@ struct ScanRequest {
     recursive: bool,
     include_hidden: bool,
     include_dev_folders: bool,
+}
+
+#[derive(Debug, Serialize)]
+struct CommonLocation {
+    label: String,
+    path: String,
+    kind: String,
 }
 
 const DEV_SEGMENTS: &[&str] = &[
@@ -150,11 +157,46 @@ fn path_has_dev_segment(path: &str) -> bool {
         .any(|segment| DEV_SEGMENTS.iter().any(|blocked| segment == *blocked))
 }
 
+#[tauri::command]
+fn common_locations() -> Vec<CommonLocation> {
+    let mut locations = Vec::new();
+    if let Some(home) = std::env::var_os("HOME").map(PathBuf::from) {
+        for name in ["Downloads", "Desktop", "Documents", "Pictures", "Movies"] {
+            let path = home.join(name);
+            if path.exists() {
+                locations.push(CommonLocation {
+                    label: name.to_string(),
+                    path: path.to_string_lossy().to_string(),
+                    kind: "folder".to_string(),
+                });
+            }
+        }
+    }
+    #[cfg(target_os = "macos")]
+    if let Ok(entries) = std::fs::read_dir("/Volumes") {
+        for entry in entries.flatten() {
+            let path = entry.path();
+            let Some(label) = path.file_name().and_then(|name| name.to_str()) else {
+                continue;
+            };
+            if label == "Macintosh HD" || label == "com.apple.TimeMachine.localsnapshots" {
+                continue;
+            }
+            locations.push(CommonLocation {
+                label: format!("Disk: {label}"),
+                path: path.to_string_lossy().to_string(),
+                kind: "disk".to_string(),
+            });
+        }
+    }
+    locations
+}
+
 #[cfg_attr(mobile, tauri::mobile_entry_point)]
 pub fn run() {
     tauri::Builder::default()
         .plugin(tauri_plugin_dialog::init())
-        .invoke_handler(tauri::generate_handler![scan_duplicates])
+        .invoke_handler(tauri::generate_handler![scan_duplicates, common_locations])
         .run(tauri::generate_context!())
         .expect("error while running DupeLens desktop app");
 }
