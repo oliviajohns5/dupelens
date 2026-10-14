@@ -30,17 +30,27 @@
 
       <div id="singleFields" class="fields">
         <label>Folder path
-          <input id="singlePath" placeholder="/Users/onemanseo/Downloads" />
+          <div class="pathRow">
+            <input id="singlePath" placeholder="/Users/onemanseo/Downloads" />
+            <button class="secondary" data-pick="singlePath" data-kind="folder" type="button">Choose folder</button>
+            <button class="secondary" data-pick="singlePath" data-kind="disk" type="button">Choose disk</button>
+          </div>
         </label>
       </div>
 
       <div id="compareFields" class="fields hidden">
         <div class="grid">
           <label>Primary folder <span>protected</span>
-            <input id="primary" placeholder="/Users/onemanseo/Downloads" />
+            <div class="pathRow">
+              <input id="primary" placeholder="/Users/onemanseo/Downloads" />
+              <button class="secondary" data-pick="primary" data-kind="folder" type="button">Choose</button>
+            </div>
           </label>
           <label>Backup/import folder <span>candidate side</span>
-            <input id="backup" placeholder="/Volumes/Backup/Old Downloads" />
+            <div class="pathRow">
+              <input id="backup" placeholder="/Volumes/Backup/Old Downloads" />
+              <button class="secondary" data-pick="backup" data-kind="disk" type="button">Choose disk</button>
+            </div>
           </label>
         </div>
       </div>
@@ -59,7 +69,7 @@
         <label class="inline"><input id="includeHidden" type="checkbox" /> Hidden</label>
         <button id="scanBtn">Scan</button>
       </div>
-      <p class="hint compactHint">Paste path from Finder: right-click folder → hold Option → Copy as Pathname.</p>
+      <p class="hint compactHint">Use the picker buttons, or paste a path manually.</p>
     </section>
 
     <section id="status" class="statusLine">Choose a folder path, then scan.</section>

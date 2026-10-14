@@ -101,8 +101,8 @@ app/
 
 UI flow:
 
-1. Choose mode: `Scan folder` or `Compare primary vs backup`.
-2. Enter/select paths.
+1. Choose mode: `Scan one folder` or `Compare with backup`.
+2. Pick paths with `Choose folder` / `Choose disk`; manual path input remains as fallback.
 3. Start scan.
 4. Show progress.
 5. Show summary: groups, files, reclaimable space.
@@ -122,6 +122,7 @@ Recommended: prototype UI locally first, then decide between Tauri and SwiftUI o
 ## Safety requirements for GUI
 
 - Folder selection must be explicit.
+- Native picker is allowed because the server runs only on `127.0.0.1`; it must not accept remote URLs.
 - Primary root must be visually marked as protected.
 - Every destructive action requires review.
 - Move to Trash only; no permanent delete in v1.

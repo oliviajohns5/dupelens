@@ -131,13 +131,15 @@ Open:
 http://127.0.0.1:8787
 ```
 
-Planned first GUI flow:
+Current GUI flow:
 
-1. Choose `Primary folder`.
-2. Choose `Backup/import folder`.
+1. Choose `Scan one folder` or `Compare with backup`.
+2. Click `Choose folder` or `Choose disk` instead of typing paths manually.
 3. Scan exact duplicates.
 4. Show `KEEP` vs `TRASH` recommendations.
-5. Save cleanup plan or move selected duplicates to Trash.
+
+Cleanup from the UI is intentionally not enabled yet. The next safety step is
+selectable cleanup-plan export, then a reviewed `Move to Trash` flow.
 
 See [`docs/GUI_PLAN.md`](docs/GUI_PLAN.md).
 

@@ -182,9 +182,36 @@ scanBtn.addEventListener('click', async () => {
   }
 });
 
+async function pickFolder(targetId, kind) {
+  const target = $(targetId);
+  const previous = target.value;
+  target.disabled = true;
+  setStatus(kind === 'disk' ? 'Choose a disk…' : 'Choose a folder…', 'A native macOS picker should open. If you cancel, nothing changes.');
+  try {
+    const res = await fetch('/api/pick-folder', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({kind}),
+    });
+    const data = await res.json();
+    if (!res.ok) throw new Error(data.error || 'Picker failed');
+    target.value = data.path;
+    setStatus('Folder selected', data.path);
+    validateInputs();
+  } catch (err) {
+    target.value = previous;
+    setStatus('Picker cancelled or unavailable', err.message || String(err));
+  } finally {
+    target.disabled = false;
+  }
+}
+
 singleMode.addEventListener('click', () => setMode('single'));
 compareMode.addEventListener('click', () => setMode('compare'));
 ['singlePath', 'primary', 'backup'].forEach((id) => $(id).addEventListener('input', validateInputs));
+document.querySelectorAll('[data-pick]').forEach((button) => {
+  button.addEventListener('click', () => pickFolder(button.dataset.pick, button.dataset.kind || 'folder'));
+});
 
 fetch('/api/health')
   .then((r) => r.json())

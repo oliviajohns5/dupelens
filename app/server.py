@@ -6,6 +6,7 @@ Runs only on 127.0.0.1 and shells out to core/target/release/dupelens-core.
 from __future__ import annotations
 
 import json
+import sys
 import subprocess
 import threading
 import time
@@ -40,6 +41,48 @@ def safe_path(value: str) -> str:
     if not value:
         raise ValueError("path is required")
     return str(Path(value).expanduser())
+
+
+def pick_folder(kind: str = "folder") -> str:
+    """Open a native folder picker on the local machine running the server."""
+    prompt = "Choose a folder to scan"
+    default = str(Path.home())
+    if kind == "disk":
+        prompt = "Choose a disk or mounted volume"
+        default = "/Volumes" if sys.platform == "darwin" else "/"
+
+    if sys.platform == "darwin":
+        script = 'POSIX path of (choose folder with prompt "{}" default location POSIX file "{}")'.format(
+            prompt.replace('"', '\\"'),
+            default.replace('"', '\\"'),
+        )
+        try:
+            result = subprocess.run(
+                ["osascript", "-e", script],
+                check=True,
+                capture_output=True,
+                text=True,
+            )
+        except subprocess.CalledProcessError as exc:
+            message = (exc.stderr or exc.stdout or "folder picker cancelled").strip()
+            raise ValueError(message) from exc
+        return result.stdout.strip().rstrip("/") or default
+
+    # Development fallback for Linux/other platforms.
+    try:
+        import tkinter as tk
+        from tkinter import filedialog
+
+        root = tk.Tk()
+        root.withdraw()
+        root.attributes("-topmost", True)
+        selected = filedialog.askdirectory(title=prompt, initialdir=default)
+        root.destroy()
+    except Exception as exc:  # noqa: BLE001 - returned to local UI
+        raise RuntimeError("Native folder picker is unavailable here. Paste the path manually.") from exc
+    if not selected:
+        raise ValueError("folder picker cancelled")
+    return selected.rstrip("/")
 
 
 def start_scan(payload: dict) -> str:
@@ -186,6 +229,12 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_POST(self) -> None:  # noqa: N802
         try:
+            if self.path == "/api/pick-folder":
+                payload = read_body(self)
+                path = pick_folder(str(payload.get("kind", "folder")))
+                status, body, ctype = json_bytes({"path": path})
+                self.send_payload(status, body, ctype)
+                return
             if self.path == "/api/scan":
                 job_id = start_scan(read_body(self))
                 status, body, ctype = json_bytes({"job_id": job_id}, 202)

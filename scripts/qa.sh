@@ -94,5 +94,10 @@ python3 -m py_compile app/server.py
 test -f app/index.html
 test -f app/app.js
 test -f app/styles.css
+grep -q '/api/pick-folder' app/server.py
+grep -q 'Choose folder' app/index.html
+grep -q 'Choose disk' app/index.html
+grep -q 'data-pick' app/index.html
+grep -q 'pickFolder' app/app.js
 
 printf '== Done ==\n'
